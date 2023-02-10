@@ -1,0 +1,57 @@
+#!/bin/sh /etc/rc.common
+#USE_PROCD=1
+#STAR 10
+#STOP 90
+start_echo_config()
+{
+	echo $1  
+}
+start()
+{	
+	# start damons	
+	# procd_set_param command /sbin/netifd
+	lan_proto=
+	lan_ipaddr=
+	config=network
+	new_lan_ipaddr=$1
+
+	echo "---show $config uci config---"
+	uci show $config
+	config_load $config
+	echo "---show ned $config uci config---"
+
+	echo "---show $config interface---"
+	config_foreach start_echo_config interface
+	echo "---show end $config interface---"
+	echo
+
+	config_get lan_proto lan proto
+	echo "protocal is :" $lan_proto
+
+	config_get lan_ipaddr lan ipaddr
+	echo "origin Lan ip address :" $lan_ipaddr
+
+	uci set $config.lan.ipaddr=$new_lan_ipaddr
+	config_get lan_ipaddr lan ipaddr
+	echo "changed Lan ip address :" $new_lan_ipaddr
+
+	echo "---modify part show--- "
+	uci changes $config
+
+	read -r -p "Are you sure changes the config? [Y/N] " response
+	case $response in
+		[yY][eE][sS]|[yY]) 
+			echo coomit netwrok config
+			uci commit network
+			;;
+		*)
+			echo revert netwrok config
+			uci revert network
+			;;
+	esac
+}
+
+stop()
+{
+	echo stop daemons 
+}
